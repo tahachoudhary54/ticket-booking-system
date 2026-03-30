@@ -1,0 +1,73 @@
+# 📌 Project Title
+TicketFlow – Ticket Booking System
+
+# 📖 Description
+TicketFlow is a full-stack web application built using the MERN stack that allows users to book, manage, and track event tickets efficiently. It provides a clean and interactive interface where users can handle tickets for various events like concerts, sports, theatre, and conferences.
+
+# 🚀 Project Overview
+The application provides a centralized system where:
+
+🎟️ Tickets can be created and managed  
+📍 Event details like venue, city, and date can be stored  
+📊 Real-time updates are reflected in the UI  
+🔄 Data is stored and retrieved from MongoDB  
+🌐 Frontend and backend communicate seamlessly  
+
+The project follows a MERN stack architecture ensuring scalability and performance.
+
+# 🛠️ Tech Stack
+
+Frontend:
+- React.js (Vite)
+- CSS / Tailwind CSS
+
+Backend:
+- Node.js
+- Express.js
+
+Database:
+- MongoDB
+
+# ✨ Features
+
+- Book new tickets  
+- View all tickets  
+- Update ticket details  
+- Delete tickets  
+- Filter tickets by category  
+- Search tickets by event or venue  
+- Status management (Pending / Confirmed / Cancelled)  
+- Real-time frontend-backend sync  
+- Data persistence using MongoDB  
+
+# 🔗 API Endpoints
+
+GET    /api/tickets       → Get all tickets  
+GET    /api/tickets/:id  → Get single ticket  
+POST   /api/tickets       → Create new ticket  
+PUT    /api/tickets/:id  → Update ticket  
+DELETE /api/tickets/:id  → Delete ticket  
+
+# ⚙️ How It Works
+
+User interacts with the frontend UI  
+React sends API requests using fetch  
+Express server handles routes and logic  
+Data is stored/retrieved from MongoDB  
+Response is sent back and displayed in UI  
+
+# 📦 Installation & Setup
+
+```bash
+# Clone repository
+git clone https://github.com/tahachoudhary54/ticket-booking-system.git
+
+# Backend setup
+cd backend
+npm install
+node server.js
+
+# Frontend setup
+cd frontend
+npm install
+npm run dev
