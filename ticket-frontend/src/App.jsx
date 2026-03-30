@@ -60,8 +60,8 @@ const CatIllustration = ({ cat }) => {
         <circle cx="55" cy="84" r="3" fill="#A89DF8" opacity="0.7"/>
         {[12,22,32,42,52,62,72,82,97].map((x,i)=>(
           <g key={i}>
-            <ellipse cx={x} cy="140" rx="5" ry="6" fill="#12082A" opacity="0.9"/>
-            <rect x={x-4} y="146" width="8" height="10" rx="1" fill="#12082A" opacity="0.9"/>
+            <ellipse cx={x} cy={140} rx="5" ry="6" fill="#12082A" opacity="0.9"/>
+            <rect x={x-4} y={146} width="8" height="10" rx="1" fill="#12082A" opacity="0.9"/>
           </g>
         ))}
         <circle cx="20" cy="8" r="6" fill="#FFE566" opacity="0.8"/>
@@ -380,8 +380,9 @@ function Card({ t, onEdit, onDelete }) {
 }
 
 /* ── Form Field ── */
-function Field({ label, name, type="text", options, form, setForm, errors }) {
+function Field({ label, name, type="text", options, datalist, placeholder, form, setForm, errors }) {
   const err = errors[name];
+  const listId = datalist ? `dl-${name}` : undefined;
   const base = {
     width:"100%",
     padding:"11px 14px",
@@ -410,15 +411,23 @@ function Field({ label, name, type="text", options, form, setForm, errors }) {
           {options.map(o=><option key={o.l||o} value={o.l||o}>{o.l||o}</option>)}
         </select>
       ) : (
-        <input
-          type={type}
-          value={form[name]}
-          onChange={e=>setForm(f=>({...f,[name]:e.target.value}))}
-          placeholder={`Enter ${label.toLowerCase()}`}
-          style={base}
-          onFocus={e=>{e.target.style.borderColor="#7C6FF7";e.target.style.background="#fff";}}
-          onBlur={e=>{e.target.style.borderColor=err?"#E8508A80":"#E8E8F0";e.target.style.background="#F8F8FC";}}
-        />
+        <>
+          <input
+            type={type}
+            value={form[name]}
+            onChange={e=>setForm(f=>({...f,[name]:e.target.value}))}
+            placeholder={placeholder || `Enter ${label.toLowerCase()}`}
+            list={listId}
+            style={base}
+            onFocus={e=>{e.target.style.borderColor="#7C6FF7";e.target.style.background="#fff";}}
+            onBlur={e=>{e.target.style.borderColor=err?"#E8508A80":"#E8E8F0";e.target.style.background="#F8F8FC";}}
+          />
+          {datalist && (
+            <datalist id={listId}>
+              {datalist.map(s=><option key={s} value={s}/>)}
+            </datalist>
+          )}
+        </>
       )}
       {err && <p style={{ color:"#E8508A", fontSize:11, margin:"4px 0 0", fontWeight:500 }}>{err}</p>}
     </div>
@@ -432,7 +441,7 @@ export default function App() {
   const [editId,  setEditId]  = useState(null);
   const [search,  setSearch]  = useState("");
   const [fCat,    setFCat]    = useState("All");
-  const [form,    setForm]    = useState({ event:"", venue:"", city:"", date:"", cat:"Concert", seats:1, price:"", status:"Pending" });
+  const [form,    setForm]    = useState({ event:"", venue:"", city:"", date:"", time:"7:00 PM", cat:"Concert", seats:1, price:"", status:"Pending" });
   const [errors,  setErrors]  = useState({});
   const [toast,   setToast]   = useState(null);
   const [delId,   setDelId]   = useState(null);
@@ -451,20 +460,6 @@ export default function App() {
     if (!form.seats || +form.seats < 1) e.seats = "Min 1 seat";
     return e;
   };
-
-  const mapBackendToUI = (item) => ({
-    id: item._id,
-    event: item.title || "",
-    venue: item.venue || "",
-    city: item.city || "",
-    date: item.date || "",
-    cat: item.category || "Concert",
-    seats: item.totalSeats || 1,
-    price: item.price || 0,
-    status: item.status || "Pending",
-    description: item.description || "",
-    time: item.time || "7:00 PM",
-  });
 
   const fetchTickets = async () => {
     try {
@@ -506,7 +501,7 @@ export default function App() {
   }, []);
 
   const openCreate = () => {
-    setForm({event:"",venue:"",city:"",date:"",cat:"Concert",seats:1,price:"",status:"Pending"});
+    setForm({event:"",venue:"",city:"",date:"",time:"7:00 PM",cat:"Concert",seats:1,price:"",status:"Pending"});
     setErrors({});
     setEditId(null);
     setView("form");
@@ -519,6 +514,7 @@ export default function App() {
     setView("form");
   };
 
+  // ── UPDATED submit function ──
   const submit = async () => {
     const e = validate();
     if (Object.keys(e).length) {
@@ -535,32 +531,26 @@ export default function App() {
       venue: form.venue,
       city: form.city,
       price: +form.price,
-      totalSeats: 1,
-      availableSeats: 1,
-      status: "Confirmed"
+      totalSeats: +form.seats,
+      availableSeats: +form.seats,
+      status: form.status
     };
 
     try {
       if (editId) {
         const res = await fetch(`${API_URL}/${editId}`, {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-
         if (!res.ok) throw new Error("Failed to update ticket");
         showToast("Ticket updated!");
       } else {
         const res = await fetch(API_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-
         if (!res.ok) throw new Error("Failed to create ticket");
         showToast("Ticket booked! 🎉");
       }
@@ -568,34 +558,22 @@ export default function App() {
       await fetchTickets();
       setView("list");
       setEditId(null);
-      setForm({
-        event: "",
-        venue: "",
-        city: "",
-        date: "",
-        cat: "Concert",
-        seats: 1,
-        price: "",
-        status: "Confirmed"
-      });
+      setForm({ event:"", venue:"", city:"", date:"", time:"7:00 PM", cat:"Concert", seats:1, price:"", status:"Pending" });
     } catch (error) {
       console.log("Error saving ticket:", error);
       showToast("Something went wrong.", false);
     }
   };
 
+  // ── UPDATED doDelete function ──
   const doDelete = async (id) => {
     try {
-      console.log("Deleting id:", id);
-
       const res = await fetch(`${API_URL}/${id}`, {
         method: "DELETE"
       });
 
-      const data = await res.json();
-      console.log("Delete response:", data);
-
       if (!res.ok) {
+        const data = await res.json();
         throw new Error(data.message || "Delete failed");
       }
 
@@ -794,18 +772,65 @@ export default function App() {
               )}
 
               <div style={{ background:"#fff", borderRadius:22, padding:"26px", border:"1.5px solid #EEEEF4", boxShadow:"0 4px 20px rgba(0,0,0,0.05)" }}>
-                <Field label="Event Name" name="event" form={form} setForm={setForm} errors={errors} />
+                <Field label="Event Name" name="event" form={form} setForm={setForm} errors={errors}
+                  placeholder="e.g. Coldplay Concert"
+                  datalist={["Coldplay Concert","IPL Finals","Zakir Khan Live","Diljit Dosanjh Live"]}
+                />
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                  <Field label="Venue" name="venue" form={form} setForm={setForm} errors={errors} />
-                  <Field label="City"  name="city"  form={form} setForm={setForm} errors={errors} />
+                  <Field label="Venue" name="venue" form={form} setForm={setForm} errors={errors}
+                    placeholder="e.g. Wankhede Stadium"
+                    datalist={["Wankhede Stadium","DY Patil Stadium","Jio World Garden","NESCO Ground"]}
+                  />
+                  <Field label="City" name="city" form={form} setForm={setForm} errors={errors}
+                    placeholder="e.g. Mumbai"
+                    datalist={["Mumbai","Delhi","Pune","Bangalore"]}
+                  />
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                   <Field label="Date" name="date" type="date" form={form} setForm={setForm} errors={errors} />
-                  <Field label="Category" name="cat" options={CATS} form={form} setForm={setForm} errors={errors} />
+                  <div style={{ marginBottom:16 }}>
+                    <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#9898B8", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.1em" }}>Time</label>
+                    <select
+                      value={form.time}
+                      onChange={e=>setForm(f=>({...f,time:e.target.value}))}
+                      style={{ width:"100%", padding:"11px 14px", borderRadius:12, border:"1.5px solid #E8E8F0", background:"#F8F8FC", color:"#12122A", fontSize:14, fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none", boxSizing:"border-box", cursor:"pointer", transition:"border-color 0.18s, background 0.18s" }}
+                      onFocus={e=>{e.target.style.borderColor="#7C6FF7";e.target.style.background="#fff";}}
+                      onBlur={e=>{e.target.style.borderColor="#E8E8F0";e.target.style.background="#F8F8FC";}}
+                    >
+                      {["10:00 AM","1:00 PM","4:00 PM","7:00 PM","9:00 PM"].map(t=>(
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                  <Field label="Category" name="cat" options={CATS} form={form} setForm={setForm} errors={errors} />
                   <Field label="Seats" name="seats" type="number" form={form} setForm={setForm} errors={errors} />
-                  <Field label="Price / Seat (₹)" name="price" type="number" form={form} setForm={setForm} errors={errors} />
+                </div>
+                <div style={{ marginBottom:16 }}>
+                  <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#9898B8", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.1em" }}>Price / Seat (₹)</label>
+                  <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
+                    {[500,1000,2000,5000].map(p=>(
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={()=>setForm(f=>({...f,price:String(p)}))}
+                        style={{ padding:"5px 13px", borderRadius:8, border:`1.5px solid ${+form.price===p?"#7C6FF7":"#E8E8F0"}`, background:+form.price===p?"#F0EFFE":"#fff", color:+form.price===p?"#7C6FF7":"#9898B8", cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}
+                      >
+                        ₹{p.toLocaleString()}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="number"
+                    value={form.price}
+                    onChange={e=>setForm(f=>({...f,price:e.target.value}))}
+                    placeholder="Enter or select price"
+                    style={{ width:"100%", padding:"11px 14px", borderRadius:12, border:`1.5px solid ${errors.price?"#E8508A80":"#E8E8F0"}`, background:"#F8F8FC", color:"#12122A", fontSize:14, fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none", boxSizing:"border-box", transition:"border-color 0.18s, background 0.18s" }}
+                    onFocus={e=>{e.target.style.borderColor="#7C6FF7";e.target.style.background="#fff";}}
+                    onBlur={e=>{e.target.style.borderColor=errors.price?"#E8508A80":"#E8E8F0";e.target.style.background="#F8F8FC";}}
+                  />
+                  {errors.price && <p style={{ color:"#E8508A", fontSize:11, margin:"4px 0 0", fontWeight:500 }}>{errors.price}</p>}
                 </div>
                 <Field label="Status" name="status" options={["Pending","Confirmed","Cancelled"]} form={form} setForm={setForm} errors={errors} />
 
